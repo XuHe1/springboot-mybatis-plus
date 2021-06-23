@@ -1,0 +1,28 @@
+
+file:
+  baseDir: F:\img\
+  urlPrefix: http://localhost/img/
+server:
+  port: 9090
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    username: root
+    url: jdbc:mysql://localhost/website?useUnicode=true&useSSL=false&characterEncoding=utf8
+    password: 123456
+log:
+  file:
+    path: E:\log\hly-website
+    name: site.log
+  service:
+    name: site
+
+# 这里的设置优先级高于xml中的设置
+logging:
+  level:
+    root: info
+
+mybatis-plus:
+  configuration:
+   # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl

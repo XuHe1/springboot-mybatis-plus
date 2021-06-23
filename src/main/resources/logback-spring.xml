@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 日志级别从低到高分为TRACE < DEBUG < INFO < WARN < ERROR < FATAL，如果设置为WARN，则低于WARN的信息都不会输出 -->
+<!-- scan:当此属性设置为true时，配置文档如果发生改变，将会被重新加载，默认值为true -->
+<!-- scanPeriod:设置监测配置文档是否有修改的时间间隔，如果没有给出时间单位，默认单位是毫秒。                  当scan为true时，此属性生效。默认的时间间隔为1分钟。 -->
+<!-- debug:当此属性设置为true时，将打印出logback内部日志信息，实时查看logback运行状态。默认值为false。 -->
+<configuration>
+    <springProperty scop="context" name="LOG_SERVICE_NAME" source="log.service.name" />
+    <springProperty scop="context" name="LOG_FILE_PATH" source="log.file.path" />
+    <springProperty scop="context" name="LOG_FILE_NAME" source="log.file.name" />
+    <define name="hostName" class="top.lovezhangli.mbp.util.HostNameProperty" />
+	<property name="maxHistory" value="180"/>
+        <!--0. 日志格式和颜色渲染 -->
+        <!-- 彩色日志依赖的渲染类 -->
+    <conversionRule conversionWord="clr"
+        converterClass="org.springframework.boot.logging.logback.ColorConverter" />
+    <conversionRule conversionWord="wex"
+        converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter" />
+    <conversionRule conversionWord="wEx"
+        converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter" />
+        <!-- 彩色日志格式 -->
+    <property name="CONSOLE_LOG_PATTERN"
+        value="${CONSOLE_LOG_PATTERN:-%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_SERVICE_NAME}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}" />
+    <property name="FILE_ERROR_LOG_PATTERN"
+        value="[%X{reqIP}->%X{desIP}] %d{yyyy-MM-dd HH:mm:ss.SSS} [%X{requestId}, %X{userId}, %X{terminal}, %X{url}] ${LOG_SERVICE_NAME:-%5p} ${PID:- } [%t] ${LOG_LEVEL_PATTERN:-%5p} %-40.40class{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}" />
+    <property name="FILE_INFO_LOG_PATTERN"
+        value="[%X{reqIP}->%X{desIP}] %d{yyyy-MM-dd HH:mm:ss.SSS} [%X{requestId}, %X{userId}, %X{terminal}, %X{url}, %X{cpu}, %X{mem}, %X{io}] ${LOG_SERVICE_NAME:-%5p} ${PID:- } [%t] ${LOG_LEVEL_PATTERN:-%5p} %-40.40class{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}" />
+    <property name="FILE_DEBUG_LOG_PATTERN"
+        value="[%X{reqIP}->%X{desIP}] %d{yyyy-MM-dd HH:mm:ss.SSS} [%X{requestId}, %X{userId}, %X{terminal}, %X{url}] ${LOG_SERVICE_NAME:-%5p} ${PID:- } [%t] ${LOG_LEVEL_PATTERN:-%5p} %-40.40class{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}" />    
+    <!--1. 输出到控制台 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+                <!--此日志appender是为开发使用，只配置最底级别，控制台输出的日志级别是大于或等于此级别的日志信息 -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+        <encoder>
+            <Pattern>${CONSOLE_LOG_PATTERN}</Pattern>
+            <!-- 设置字符集 -->
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+	
+	 <!-- ERROR级别日志 -->  
+    <!-- 滚动记录文件，先将日志记录到指定文件，当符合某个条件时，将日志记录到其他文件 RollingFileAppender-->  
+    <appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">  
+        <!-- 过滤器，只记录ERROR级别的日志 -->  
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">  
+            <level>ERROR</level>  
+            <onMatch>ACCEPT</onMatch>  
+            <onMismatch>DENY</onMismatch>  
+        </filter>  
+        <encoder>
+            <pattern>${FILE_ERROR_LOG_PATTERN}</pattern>
+        </encoder>
+        <file>${LOG_FILE_PATH}/${hostName}/error-${LOG_FILE_NAME}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <!-- 日志命名:单个文件大于100MB 按照时间+自增i 生成log文件 -->
+            <fileNamePattern>${LOG_FILE_PATH}/${hostName}/error-${LOG_FILE_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!-- 最大保存时间：180天 -->
+            <maxHistory>${maxHistory}</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- WARN appender -->
+    <appender name="WARN" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 过滤器，只记录WARN级别的日志 -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <pattern>${FILE_INFO_LOG_PATTERN}</pattern>
+        </encoder>
+        <file>${LOG_FILE_PATH}/${hostName}/warn-${LOG_FILE_NAME}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <!-- 日志命名:单个文件大于100MB 按照时间+自增i 生成log文件 -->
+            <fileNamePattern>${LOG_FILE_PATH}/${hostName}/warn-${LOG_FILE_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!-- 最大保存时间：180天 -->
+            <maxHistory>${maxHistory}</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+
+
+    <!-- INFO级别日志 appender -->  
+    <appender name="INFO" class="ch.qos.logback.core.rolling.RollingFileAppender">  
+        <!-- 过滤器，只记录INFO级别的日志 -->  
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">  
+            <level>INFO</level>  
+            <onMatch>ACCEPT</onMatch>  
+            <onMismatch>DENY</onMismatch>  
+        </filter>  
+        <encoder>
+            <pattern>${FILE_INFO_LOG_PATTERN}</pattern>
+        </encoder>
+        <file>${LOG_FILE_PATH}/${hostName}/info-${LOG_FILE_NAME}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <!-- 日志命名:单个文件大于100MB 按照时间+自增i 生成log文件 -->
+            <fileNamePattern>${LOG_FILE_PATH}/${hostName}/info-${LOG_FILE_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!-- 最大保存时间：180天 -->
+             <maxHistory>${maxHistory}</maxHistory>
+        </rollingPolicy>
+    </appender>
+      
+    <!-- DEBUG级别日志 appender -->  
+    <appender name="DEBUG" class="ch.qos.logback.core.rolling.RollingFileAppender">  
+        <!-- 过滤器，只记录DEBUG级别的日志 -->  
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">  
+            <level>DEBUG</level>  
+            <onMatch>ACCEPT</onMatch>  
+            <onMismatch>DENY</onMismatch>  
+        </filter>  
+        <encoder>
+            <pattern>${FILE_DEBUG_LOG_PATTERN}</pattern>
+        </encoder>
+        <file>${LOG_FILE_PATH}/${hostName}/debug-${LOG_FILE_NAME}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <!-- 日志命名:单个文件大于100MB 按照时间+自增i 生成log文件 -->
+            <fileNamePattern>${LOG_FILE_PATH}/debug/debug-${LOG_FILE_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!-- 最大保存时间：180天 -->
+             <maxHistory>${maxHistory}</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!--todo: 异步方式-->
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 控制台输出 -->
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="DEBUG" />
+        <appender-ref ref="INFO" />
+        <appender-ref ref="WARN" />
+        <appender-ref ref="ERROR" />
+    </appender>
+
+        <!-- 4. 最终的策略 -->
+    <root level="DEBUG">
+        <!--同步方式-->
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="DEBUG" />
+        <appender-ref ref="INFO" />
+        <appender-ref ref="WARN" />
+        <appender-ref ref="ERROR" />
+    </root>
+
+ <!--   <logger name="com.hly.website.hlywebsite.mapper" level="trace" />-->
+
+</configuration>
